@@ -1,19 +1,24 @@
-import { pgTable, text, uuid, timestamp, integer } from 'drizzle-orm/pg-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 import { exams } from './exams';
 import { relations } from 'drizzle-orm';
 import { choises } from './choises';
 
-export const questions = pgTable('questions', {
-	id: uuid('id').primaryKey().defaultRandom(),
+export const questions = sqliteTable('questions', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
 	number: integer('number').notNull(),
-	examId: uuid('exam_id')
+	examId: text('exam_id')
 		.notNull()
 		.references(() => exams.id, { onDelete: 'cascade' }),
 	content: text('content').notNull(),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-	updatedAt: timestamp('updated_at')
-		.defaultNow()
-		.$defaultFn(() => new Date())
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.$onUpdate(() => new Date())
 		.notNull()
 });
 export const questionRelations = relations(questions, ({ one, many }) => ({

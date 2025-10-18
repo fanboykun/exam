@@ -1,26 +1,30 @@
-import { pgTable, uuid, timestamp, unique } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core';
+import { sql, relations } from 'drizzle-orm';
 import { questions } from './questions';
 import { assignments } from './assignments';
 import { choises } from './choises';
 
-export const answers = pgTable(
+export const answers = sqliteTable(
 	'answers',
 	{
-		id: uuid('id').primaryKey().defaultRandom(),
-		assignmentId: uuid('assignment_id')
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		assignmentId: text('assignment_id')
 			.notNull()
 			.references(() => assignments.id, { onDelete: 'cascade' }),
-		questionId: uuid('question_id')
+		questionId: text('question_id')
 			.notNull()
 			.references(() => questions.id, { onDelete: 'cascade' }),
-		choiceId: uuid('choice_id')
+		choiceId: text('choice_id')
 			.notNull()
 			.references(() => choises.id, { onDelete: 'cascade' }),
-		createdAt: timestamp('created_at').defaultNow().notNull(),
-		updatedAt: timestamp('updated_at')
-			.defaultNow()
-			.$defaultFn(() => new Date())
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.default(sql`(unixepoch())`)
+			.notNull(),
+		updatedAt: integer('updated_at', { mode: 'timestamp' })
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => new Date())
 			.notNull()
 	},
 	(table) => [unique().on(table.assignmentId, table.questionId, table.choiceId)]

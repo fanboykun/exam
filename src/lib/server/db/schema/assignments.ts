@@ -1,24 +1,30 @@
-import { pgTable, uuid, timestamp, integer } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql, relations } from 'drizzle-orm';
 import { users } from './users';
 import { exams } from './exams';
 import { answers } from './answers';
 
-export const assignments = pgTable('assignments', {
-	id: uuid('id').primaryKey().defaultRandom(),
-	userId: uuid('user_id')
+export const assignments = sqliteTable('assignments', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id')
 		.notNull()
 		.references(() => users.id, { onDelete: 'cascade' }),
-	examId: uuid('exam_id')
+	examId: text('exam_id')
 		.notNull()
 		.references(() => exams.id, { onDelete: 'cascade' }),
-	startAt: timestamp('start_at').defaultNow().notNull(),
+	startAt: integer('start_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.notNull(),
 	correctAnswer: integer('correct_answer').default(0).notNull(),
-	finishAt: timestamp('finish_at'),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-	updatedAt: timestamp('updated_at')
-		.defaultNow()
-		.$defaultFn(() => new Date())
+	finishAt: integer('finish_at', { mode: 'timestamp' }),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.$onUpdate(() => new Date())
 		.notNull()
 });
 export const assignmentRelations = relations(assignments, ({ one, many }) => ({

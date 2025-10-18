@@ -1,6 +1,6 @@
-import { getDatabase } from './drivers/node-postgres';
+import { createDatabase } from './drivers/libsql';
 
-export const db = getDatabase();
+export const db = createDatabase();
 type Trx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type Db = typeof db | Trx;
 
