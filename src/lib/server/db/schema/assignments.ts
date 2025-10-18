@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 import { sql, relations } from 'drizzle-orm';
 import { users } from './users';
 import { exams } from './exams';
@@ -18,6 +18,7 @@ export const assignments = sqliteTable('assignments', {
 		.default(sql`(unixepoch())`)
 		.notNull(),
 	correctAnswer: integer('correct_answer').default(0).notNull(),
+	score: real('score').default(0),
 	finishAt: integer('finish_at', { mode: 'timestamp' }),
 	createdAt: integer('created_at', { mode: 'timestamp' })
 		.default(sql`(unixepoch())`)

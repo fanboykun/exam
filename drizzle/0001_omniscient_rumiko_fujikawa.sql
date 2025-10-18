@@ -1,0 +1,1 @@
+ALTER TABLE `assignments` ADD `score` real DEFAULT 0;

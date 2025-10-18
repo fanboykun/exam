@@ -8,6 +8,13 @@
       "when": 1760793337218,
       "tag": "0000_colorful_trish_tilby",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1760806422672,
+      "tag": "0001_omniscient_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }
