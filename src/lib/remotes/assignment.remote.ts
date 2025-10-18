@@ -6,6 +6,8 @@ import * as schema from '$lib/server/db/schema';
 import { dev } from '$app/environment';
 import { eq } from 'drizzle-orm';
 
+const examSessionName = 'exam_session';
+
 export const createAssignment = command(
 	z.object({
 		examId: z.uuid()
@@ -17,11 +19,11 @@ export const createAssignment = command(
 		} = getRequestEvent();
 		if (!user) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 
-		const currentExamState = cookies.get('exam_session');
-		if (currentExamState && currentExamState === examId) {
+		const currentExamState = cookies.get(examSessionName);
+		if (currentExamState) {
 			return RemoteResponse.failure({ error: {}, message: 'You are already in an exam' });
 		}
-		cookies.delete('exam_session', { path: '/' });
+		cookies.delete(examSessionName, { path: '/' });
 
 		const selectedExam = await db.query.exams.findFirst({
 			where: (exams, { eq }) => eq(exams.id, examId)
@@ -38,9 +40,9 @@ export const createAssignment = command(
 			.returning();
 		if (!newAssignment)
 			return RemoteResponse.failure({ error: {}, message: 'Failed to create assignment' });
-		cookies.set('exam_session', newAssignment.examId, {
+		cookies.set(examSessionName, newAssignment.id, {
 			path: '/',
-			maxAge: selectedExam.duration ?? undefined,
+			maxAge: selectedExam.duration ? selectedExam.duration * 60 : undefined,
 			httpOnly: true,
 			secure: !dev,
 			sameSite: 'lax'
@@ -65,8 +67,11 @@ export const submitAssignment = command(
 			cookies
 		} = getRequestEvent();
 		if (!user) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
-		const assignmentSession = cookies.get('exam_session');
+		const assignmentSession = cookies.get(examSessionName);
 		if (!assignmentSession) {
+			return RemoteResponse.failure({ error: {}, message: 'No assignment session found' });
+		}
+		if (assignmentId !== assignmentSession) {
 			return RemoteResponse.failure({ error: {}, message: 'No assignment session found' });
 		}
 		const selectedAssignment = await db.query.assignments.findFirst({
@@ -100,11 +105,14 @@ export const submitAssignment = command(
 		}
 		const finishedAt = new Date();
 		const timeTaken = selectedAssignment.startAt.getTime() - finishedAt.getTime();
+		const score = correctAnswers ? (correctAnswers / questionsWithChoises.length) * 100 : 0;
 		const result = await transaction(async (trx) => {
 			const [updatedAssignment] = await trx
 				.update(schema.assignments)
 				.set({
-					finishAt: finishedAt
+					finishAt: finishedAt,
+					correctAnswer: correctAnswers,
+					score
 				})
 				.where(eq(schema.assignments.id, selectedAssignment.id))
 				.returning();
@@ -123,11 +131,11 @@ export const submitAssignment = command(
 			if (!createdAnswers.length)
 				return RemoteResponse.failure({ error: {}, message: 'Failed to create answers' });
 			return RemoteResponse.success({
-				data: { assignemnt: updatedAssignment, correctAnswers, timeTaken },
+				data: { assignment: updatedAssignment, correctAnswers, timeTaken },
 				message: 'Assignment Submitted!'
 			});
 		});
-		if (result.success) cookies.delete('exam_session', { path: '/' });
+		if (result.success) cookies.delete(examSessionName, { path: '/' });
 		return result;
 	}
 );
