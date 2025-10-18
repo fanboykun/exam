@@ -1,5 +1,7 @@
 import { pgTable, text, uuid, timestamp, index } from 'drizzle-orm/pg-core';
 import { userRoleEnum } from './enums';
+import { relations } from 'drizzle-orm';
+import { assignments } from './assignments';
 
 export const users = pgTable(
 	'users',
@@ -21,3 +23,6 @@ export const users = pgTable(
 	},
 	(table) => [index('provider_idx').on(table.provider), index('user_role_idx').on(table.userRole)]
 );
+export const userRelations = relations(users, ({ many }) => ({
+	assignments: many(assignments)
+}));

@@ -1,6 +1,6 @@
 {
-  "id": "a48c253d-0249-4635-b72f-7b400ae66239",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "8c372c1a-b8ef-4de4-96b1-661a3acaba5a",
+  "prevId": "a48c253d-0249-4635-b72f-7b400ae66239",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -426,11 +426,18 @@
           "notNull": true,
           "default": "now()"
         },
+        "correct_answer": {
+          "name": "correct_answer",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "finish_at": {
           "name": "finish_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
