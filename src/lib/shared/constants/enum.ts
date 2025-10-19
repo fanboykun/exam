@@ -5,8 +5,7 @@ type Enum<T extends string> = {
 };
 
 export type AuthProviderType = AppliableProvider;
-export type UserRoleType =
-	(typeof import('$lib/server/db/schema/enums').userRoleEnum)['enumValues'][number];
+export type UserRoleType = (typeof import('$lib/server/db/schema/enums').userRoleEnum)[number];
 
 export const AuthProvider = Object.freeze({
 	GOOGLE: 'google',

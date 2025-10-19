@@ -1,6 +1,6 @@
 <script lang="ts">
 	import MockLogin from './(components)/mock-login.svelte';
-	import PasswordLogin from './(components)/password-login.svelte';
+	// import PasswordLogin from './(components)/password-login.svelte';
 	import SocialLogin from './(components)/social-login.svelte';
 	import { page } from '$app/state';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
@@ -34,9 +34,9 @@
 					{#if data.shouldMockLogin === true}
 						<MockLogin />
 					{:else}
-						{#if data.plugins.length}
+						<!-- {#if data.plugins.length}
 							<PasswordLogin plugins={data.plugins} />
-						{/if}
+						{/if} -->
 						{#if data.providers.length}
 							<SocialLogin providers={data.providers} />
 						{/if}
