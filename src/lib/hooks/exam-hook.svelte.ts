@@ -30,6 +30,8 @@ class ExamHookClass {
 
 	timeLeft = $state(0);
 	isQuestionListOpen = $state(false);
+	private timerInterval?: ReturnType<typeof setInterval>;
+	showTimeoutDialog = $state(false);
 
 	createAssigmentHandler = remoteSubmitHandler({
 		onSubmit: ({ cancel }) => {
@@ -39,6 +41,7 @@ class ExamHookClass {
 		onSuccess: ({ data }) => {
 			this.assignment = data;
 			this.currentState = 'progress';
+			this.initializeTimer();
 		}
 	});
 
@@ -57,6 +60,7 @@ class ExamHookClass {
 			this.assignment = data.assignment;
 			this.currentState = 'result';
 			this.clearAnswerFromLocalStorage(this.assignment.id);
+			this.destroy();
 		}
 	});
 
@@ -64,6 +68,54 @@ class ExamHookClass {
 		this.exam = props.exam;
 		this.questions = props.exam.questions;
 		this.assignment = props.assignment;
+		this.initializeTimer();
+	}
+
+	private initializeTimer() {
+		if (!this.exam.duration || !this.assignment?.startAt) return;
+
+		const updateTimer = () => {
+			const now = Date.now();
+			const startTime = new Date(this.assignment!.startAt).getTime();
+			const durationMs = this.exam.duration! * 60 * 1000;
+			const endTime = startTime + durationMs;
+			const remaining = Math.max(0, endTime - now);
+
+			this.timeLeft = Math.floor(remaining / 1000);
+
+			if (this.timeLeft === 0) {
+				this.stopTimer();
+				if (this.currentState === 'progress') {
+					this.showTimeoutDialog = true;
+					this.finishExam();
+				}
+			}
+		};
+
+		updateTimer();
+		this.timerInterval = setInterval(updateTimer, 1000);
+	}
+
+	private stopTimer() {
+		if (this.timerInterval) {
+			clearInterval(this.timerInterval);
+			this.timerInterval = undefined;
+		}
+	}
+
+	destroy() {
+		this.stopTimer();
+	}
+
+	get formattedTimeLeft() {
+		const hours = Math.floor(this.timeLeft / 3600);
+		const minutes = Math.floor((this.timeLeft % 3600) / 60);
+		const seconds = this.timeLeft % 60;
+
+		if (hours > 0) {
+			return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+		}
+		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 	}
 
 	async startExam() {
@@ -124,6 +176,7 @@ class ExamHookClass {
 	}
 
 	async retakeExam() {
+		this.stopTimer();
 		this.assignment = undefined;
 		this.answers.clear();
 		this.currentQuestionIdx = 0;

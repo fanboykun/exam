@@ -26,7 +26,10 @@
 			examHook.currentState = 'progress';
 		}
 		window.addEventListener('beforeunload', handleBeforeUnload);
-		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			examHook.destroy();
+		};
 	});
 </script>
 
@@ -41,9 +44,11 @@
 					{titleCase(examHook.currentState)}
 				</Badge>
 			</Card.Description>
-			<Card.Action>
-				{examHook.timeLeft}
-			</Card.Action>
+			{#if examHook.timeLeft > 0 && examHook.currentState === 'progress'}
+				<Card.Action>
+					{examHook.formattedTimeLeft}
+				</Card.Action>
+			{/if}
 		</Card.Header>
 		<Card.Content class="flex h-full min-h-full items-center justify-center">
 			{#if examHook.currentState === 'preparation'}
