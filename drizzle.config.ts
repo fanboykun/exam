@@ -19,7 +19,7 @@ function getCredentials() {
 }
 export default defineConfig({
 	schema: './src/lib/server/db/schema/index.ts',
-	dialect: 'sqlite',
+	dialect: 'turso',
 	dbCredentials: getCredentials(),
 	verbose: true,
 	strict: true,
