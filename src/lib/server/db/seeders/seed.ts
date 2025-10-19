@@ -1,35 +1,9 @@
-import { hash } from 'bcryptjs';
-import { users, exams, questions, choises } from '../schema';
+import { exams, questions, choises } from '../schema';
 import { eq } from 'drizzle-orm';
 import { db } from '..';
 
 async function main() {
-	// need improvement,
-
 	try {
-		if (process.env.NODE_ENV === 'production')
-			throw new Error('This script is only for development environment');
-
-		// Seed admin user
-		const [existingUser] = await db
-			.select()
-			.from(users)
-			.where(eq(users.email, 'admin@admin.com'))
-			.limit(1);
-		if (!existingUser) {
-			const password = 'Admin123';
-			if (!password) throw new Error('DEFAULT_PASSWORD is not set');
-			const hashedPassword = await hash(password, 12);
-			await db.insert(users).values({
-				email: 'admin@admin.com',
-				password: hashedPassword,
-				name: 'Admin',
-				userRole: 'admin',
-				provider: 'password'
-			});
-		}
-
-		// Seed exams
 		await seedExam();
 	} finally {
 		console.log('seed done');
