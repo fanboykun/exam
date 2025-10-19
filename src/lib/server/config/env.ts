@@ -14,9 +14,7 @@ export const envSchema = z.object({
 	GOOGLE_CLIENT_ID: z.string().min(1),
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	GITHUB_CLIENT_ID: z.string().min(1),
-	GITHUB_CLIENT_SECRET: z.string().min(1),
-	FACEBOOK_CLIENT_ID: z.string().min(1),
-	FACEBOOK_CLIENT_SECRET: z.string().min(1)
+	GITHUB_CLIENT_SECRET: z.string().min(1)
 });
 export function validateEnv() {
 	// Skip validation during build time

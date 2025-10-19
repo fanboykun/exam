@@ -11,6 +11,8 @@ node_modules
 /docker/volumes/*
 /dist
 /dev-dist
+/.data
+.data
 
 # OS
 .DS_Store
@@ -31,3 +33,5 @@ vite.config.ts.timestamp-*
 
 # SQLite
 *.db
+*.sqlite
+*.journal

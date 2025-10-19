@@ -1,6 +1,6 @@
 import { env } from '../config/env';
 import { AuthInstance } from './core';
-import { PasswordPlugin } from './plugins/password';
+// import { PasswordPlugin } from './plugins/password';
 import { GithubProvider, GoogleProvider } from './providers';
 // import { RedisSession } from './sessions/redis-session';
 import { DatabaseSession } from './sessions/database-session';
@@ -42,10 +42,10 @@ export const auth = new AuthInstance({
 		})
 	},
 	// session: (config) => new RedisSession(config),
-	session: (config) => new DatabaseSession(config),
-	plugins: {
-		password: new PasswordPlugin()
-	}
+	session: (config) => new DatabaseSession(config)
+	// plugins: {
+	// 	password: new PasswordPlugin()
+	// }
 });
 /**
  * List of all applied providers.

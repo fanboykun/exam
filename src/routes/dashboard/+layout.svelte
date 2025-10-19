@@ -9,13 +9,13 @@
 	import { createBreadcrumb, setBreadcrumb } from '$lib/hooks/use-breadcrumb.svelte';
 	import {
 		ChartBar,
-		EditIcon,
-		Folder,
 		House,
-		LayoutDashboardIcon,
-		PlusIcon,
-		RefreshCcw,
-		Trash2Icon
+		RefreshCcw
+		// EditIcon,
+		// Folder,
+		// LayoutDashboardIcon,
+		// PlusIcon,
+		// Trash2Icon
 	} from '@lucide/svelte';
 	import type { LayoutProps } from './$types';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
@@ -39,55 +39,55 @@
 					isActive: true
 				}
 			]
-		},
-		{
-			title: 'Report',
-			links: [
-				{
-					label: 'Report',
-					icon: LayoutDashboardIcon,
-					isActive: true,
-					items: [
-						{
-							label: 'Cash Flow',
-							isActive: false,
-							url: '#'
-						}
-					]
-				}
-			]
-		},
-		{
-			title: 'Projects',
-			links: [
-				{
-					label: 'Main Projects',
-					icon: Folder,
-					isActive: true,
-					id: '1',
-					actions: [
-						{
-							label: 'Add Project',
-							isActive: false,
-							url: '#',
-							icon: PlusIcon
-						},
-						{
-							label: 'Edit Project',
-							isActive: false,
-							url: '#',
-							icon: EditIcon
-						},
-						{
-							label: 'Delete Project',
-							isActive: false,
-							url: '#',
-							icon: Trash2Icon
-						}
-					]
-				}
-			]
 		}
+		// {
+		// 	title: 'Report',
+		// 	links: [
+		// 		{
+		// 			label: 'Report',
+		// 			icon: LayoutDashboardIcon,
+		// 			isActive: true,
+		// 			items: [
+		// 				{
+		// 					label: 'Cash Flow',
+		// 					isActive: false,
+		// 					url: '#'
+		// 				}
+		// 			]
+		// 		}
+		// 	]
+		// },
+		// {
+		// 	title: 'Projects',
+		// 	links: [
+		// 		{
+		// 			label: 'Main Projects',
+		// 			icon: Folder,
+		// 			isActive: true,
+		// 			id: '1',
+		// 			actions: [
+		// 				{
+		// 					label: 'Add Project',
+		// 					isActive: false,
+		// 					url: '#',
+		// 					icon: PlusIcon
+		// 				},
+		// 				{
+		// 					label: 'Edit Project',
+		// 					isActive: false,
+		// 					url: '#',
+		// 					icon: EditIcon
+		// 				},
+		// 				{
+		// 					label: 'Delete Project',
+		// 					isActive: false,
+		// 					url: '#',
+		// 					icon: Trash2Icon
+		// 				}
+		// 			]
+		// 		}
+		// 	]
+		// }
 	];
 	const secondaryLink: Link[] = [
 		{
