@@ -56,6 +56,7 @@ class ExamHookClass {
 		onSuccess: ({ data }) => {
 			this.assignment = data.assignment;
 			this.currentState = 'result';
+			this.clearAnswerFromLocalStorage(this.assignment.id);
 		}
 	});
 
@@ -63,9 +64,6 @@ class ExamHookClass {
 		this.exam = props.exam;
 		this.questions = props.exam.questions;
 		this.assignment = props.assignment;
-		if (props.assignment) {
-			this.currentState = 'progress';
-		}
 	}
 
 	async startExam() {
@@ -74,6 +72,10 @@ class ExamHookClass {
 
 	isCurrentAnswer(choiceId: string) {
 		return this.answers.get(this.currentQuestion.id) === choiceId;
+	}
+
+	isAnswered(questionId: string) {
+		return this.answers.has(questionId);
 	}
 
 	canGoPrev() {
@@ -121,5 +123,33 @@ class ExamHookClass {
 		await this.finishAssignmentHandler.handle();
 	}
 
-	async retakeExam() {}
+	async retakeExam() {
+		this.assignment = undefined;
+		this.answers.clear();
+		this.currentQuestionIdx = 0;
+		this.currentState = 'preparation';
+		this.timeLeft = 0;
+	}
+
+	handleBeforeUnload(event: BeforeUnloadEvent) {
+		event.preventDefault();
+		if (!this.answers.size || !this.assignment) return;
+		if (this.currentState === 'result' || this.currentState === 'preparation') return;
+		const ans = Object.fromEntries(this.answers.entries());
+		const strans = JSON.stringify(ans);
+		localStorage.setItem(this.assignment.id, strans);
+	}
+
+	checkAnswerFromLocalStorage(key: string) {
+		const ans = localStorage.getItem(key);
+		if (!ans) return;
+		const parsed = JSON.parse(ans) as Record<string, string>;
+		Object.entries(parsed ?? {}).forEach(([questionId, choiceId]) => {
+			this.answers.set(questionId, choiceId);
+		});
+	}
+
+	clearAnswerFromLocalStorage(key: string) {
+		localStorage.removeItem(key);
+	}
 }

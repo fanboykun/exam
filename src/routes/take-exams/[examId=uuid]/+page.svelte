@@ -10,11 +10,23 @@
 	import ResultStep from './(components)/result-step.svelte';
 	import { titleCase } from '$lib/shared/utils/text';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	const examHook = createExamHook({
 		exam: data.exam,
 		assignment: data.assignment
+	});
+	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+		examHook.handleBeforeUnload(event);
+	};
+	onMount(() => {
+		if (data.assignment) {
+			examHook.checkAnswerFromLocalStorage(data.assignment.id);
+			examHook.currentState = 'progress';
+		}
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
 	});
 </script>
 
@@ -52,8 +64,9 @@
 			{/if}
 		</Card.Content>
 		{#if examHook.currentState === 'progress'}
-			<Button class="block sm:hidden" onclick={() => (examHook.isQuestionListOpen = true)}
-				>Pertanyaan</Button
+			<Button
+				class="absolute bottom-5 left-5 block sm:hidden"
+				onclick={() => (examHook.isQuestionListOpen = true)}>Pertanyaan</Button
 			>
 		{/if}
 	</Card.Root>

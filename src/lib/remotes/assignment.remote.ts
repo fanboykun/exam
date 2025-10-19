@@ -83,16 +83,12 @@ export const submitAssignment = command(
 		if (selectedAssignment.userId !== user.id)
 			return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 		const questionsWithChoises = await db.query.questions.findMany({
-			where: (questions, { inArray }) =>
-				inArray(
-					questions.id,
-					answers.map((answer) => answer.questionId)
-				),
+			where: (questions, { eq }) => eq(questions.examId, selectedAssignment.examId),
 			with: {
 				choises: true
 			}
 		});
-		if (questionsWithChoises.length !== answers.length)
+		if (!questionsWithChoises?.length)
 			return RemoteResponse.failure({ error: {}, message: 'Invalid answers' });
 
 		let correctAnswers = 0;
@@ -105,7 +101,9 @@ export const submitAssignment = command(
 		}
 		const finishedAt = new Date();
 		const timeTaken = selectedAssignment.startAt.getTime() - finishedAt.getTime();
-		const score = correctAnswers ? (correctAnswers / questionsWithChoises.length) * 100 : 0;
+		const score = correctAnswers
+			? Math.round((correctAnswers / questionsWithChoises.length) * 100)
+			: 0;
 		const result = await transaction(async (trx) => {
 			const [updatedAssignment] = await trx
 				.update(schema.assignments)
