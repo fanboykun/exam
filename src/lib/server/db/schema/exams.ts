@@ -1,18 +1,24 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, text, uuid, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { questions } from './questions';
 import { assignments } from './assignments';
 
-export const exams = pgTable('exams', {
-	id: uuid('id').primaryKey(),
+export const exams = sqliteTable('exams', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
 	title: text('title').notNull(),
 	duration: integer('duration'), // null means unlimited duration
-	shouldRandomizeQuestions: boolean('should_randomize_questions').default(false).notNull(),
+	shouldRandomizeQuestions: integer('should_randomize_questions', { mode: 'boolean' })
+		.default(false)
+		.notNull(),
 	description: text('description'),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-	updatedAt: timestamp('updated_at')
-		.defaultNow()
-		.$defaultFn(() => new Date())
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.$onUpdate(() => new Date())
 		.notNull()
 });
 

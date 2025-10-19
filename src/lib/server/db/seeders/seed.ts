@@ -1,11 +1,7 @@
 import { hash } from 'bcryptjs';
 import { users, exams, questions, choises } from '../schema';
 import { eq } from 'drizzle-orm';
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-
-const client = new Pool({ connectionString: process.env.DATABASE_URL! });
-const db = drizzle(client, { schema: { users, exams, questions, choises } });
+import { db } from '..';
 
 async function main() {
 	// need improvement,
@@ -36,7 +32,7 @@ async function main() {
 		// Seed exams
 		await seedExam();
 	} finally {
-		await db.$client.end();
+		console.log('seed done');
 	}
 }
 main()

@@ -1,18 +1,22 @@
-import { pgTable, text, uuid, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql, relations } from 'drizzle-orm';
 import { questions } from './questions';
-export const choises = pgTable('choices', {
-	id: uuid('id').primaryKey().defaultRandom(),
-	questionId: uuid('question_id')
+export const choises = sqliteTable('choices', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	questionId: text('question_id')
 		.notNull()
 		.references(() => questions.id, { onDelete: 'cascade' }),
 	position: integer('position').notNull(), // ordering
 	content: text('content').notNull(),
-	isCorrect: boolean('is_correct').notNull(),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-	updatedAt: timestamp('updated_at')
-		.defaultNow()
-		.$defaultFn(() => new Date())
+	isCorrect: integer('is_correct', { mode: 'boolean' }).notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch())`)
+		.$onUpdate(() => new Date())
 		.notNull()
 });
 
