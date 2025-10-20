@@ -46,7 +46,7 @@ export class DatabaseSession extends BaseSession implements SessionManager {
 		}
 	}
 
-	async getSession<T extends SessionPayload = SessionPayload>({
+	async getSession<T extends SessionPayload = Entity['Session']>({
 		cookies
 	}: {
 		cookies: Cookies;
@@ -63,11 +63,7 @@ export class DatabaseSession extends BaseSession implements SessionManager {
 				await this.deleteSession({ cookies });
 				return null;
 			}
-			return {
-				userId: session.userId,
-				ipAddress: session.ipAddress,
-				userAgent: session.userAgent
-			} as unknown as T;
+			return session as unknown as T;
 		} catch (error) {
 			console.error('ERROR IN Session.getSession');
 			console.error(error);

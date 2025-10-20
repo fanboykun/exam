@@ -16,6 +16,7 @@ declare global {
 		interface Locals {
 			traceId: string;
 			user: User | null;
+			session: Entity['Session'] | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

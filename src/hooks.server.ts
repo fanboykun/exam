@@ -19,6 +19,7 @@ const setUser: Handle = async ({ resolve, event }) => {
 		cookies: event.cookies
 	});
 	if (!session) return resolve(event);
+	event.locals.session = session;
 	const user = await new Models.User().findById(session.userId);
 	if (!user) return resolve(event);
 	event.locals.user = user;

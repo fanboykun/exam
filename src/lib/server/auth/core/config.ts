@@ -84,9 +84,7 @@ export type SessionPayload = {
 };
 
 export interface SessionManager {
-	getSession<T extends SessionPayload = SessionPayload>(props: {
-		cookies: Cookies;
-	}): Promise<T | null>;
+	getSession<T extends SessionPayload>(props: { cookies: Cookies }): Promise<T | null>;
 	setSession<T extends SessionPayload = SessionPayload>(props: {
 		cookies: Cookies;
 		sessionId?: string;

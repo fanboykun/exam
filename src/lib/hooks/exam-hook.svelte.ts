@@ -54,7 +54,12 @@ class ExamHookClass {
 				questionId,
 				choiseId
 			}));
-			return () => submitAssignment({ assignmentId: assignmentId, answers: mappedAnswers });
+			return () =>
+				submitAssignment({
+					assignmentId: assignmentId,
+					answers: mappedAnswers,
+					finishedAt: new Date()
+				});
 		},
 		onSuccess: ({ data }) => {
 			this.assignment = data.assignment;
