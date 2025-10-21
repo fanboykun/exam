@@ -10,26 +10,25 @@
 	import ResultStep from './(components)/result-step.svelte';
 	import { titleCase } from '$lib/shared/utils/text';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
-	import { onMount } from 'svelte';
+	import { findExamWithQuestionsAndChoises } from '$lib/remotes/exam.remote';
+	import { goto } from '$app/navigation';
+	import { findAssignment } from '$lib/remotes/assignment.remote';
 
 	let { data } = $props();
-	const examHook = createExamHook({
-		exam: data.exam,
-		assignment: data.assignment
-	});
-	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-		examHook.handleBeforeUnload(event);
+	const getExam = async () => {
+		if (!data.examId) return (await goto('/dashboard')) as never;
+		const exam = await findExamWithQuestionsAndChoises({ examId: data.examId! });
+		if (!exam) return (await goto('/dashboard')) as never;
+		return exam;
 	};
-	onMount(() => {
-		if (data.assignment) {
-			examHook.checkAnswerFromLocalStorage(data.assignment.id);
-			examHook.currentState = 'progress';
-		}
-		window.addEventListener('beforeunload', handleBeforeUnload);
-		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload);
-			examHook.destroy();
-		};
+	const getAssignment = async () => {
+		if (!data.assignmentSession) return;
+		const assignment = await findAssignment({ assignmentSession: data.assignmentSession });
+		return assignment;
+	};
+	const examHook = createExamHook({
+		exam: await getExam(),
+		assignment: await getAssignment()
 	});
 </script>
 

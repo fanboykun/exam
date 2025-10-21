@@ -1,4 +1,4 @@
-import { command, getRequestEvent } from '$app/server';
+import { command, getRequestEvent, query } from '$app/server';
 import { db, transaction } from '$lib/server/db';
 import { RemoteResponse } from '$lib/shared/utils/remote-response';
 import z from 'zod';
@@ -35,6 +35,20 @@ const examSessionName = 'exam_session';
 // 		cookies.delete(this.examSessionName, { path: '/' });
 // 	}
 // }
+
+export const findAssignment = query(
+	z.object({ assignmentSession: z.string().length(48) }),
+	async ({ assignmentSession }) => {
+		const assignmentId = atob(assignmentSession);
+		const assignment = await db.query.assignments.findFirst({
+			where: (assignments, { eq }) => eq(assignments.id, assignmentId),
+			with: {
+				answers: true
+			}
+		});
+		return assignment;
+	}
+);
 
 export const createAssignment = command(
 	z.object({
