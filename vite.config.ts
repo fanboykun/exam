@@ -12,7 +12,9 @@ export default defineConfig({
 		sveltekit(),
 		devtoolsJson(),
 		SvelteKitPWA({
-			strategies: 'generateSW',
+			srcDir: 'src',
+			filename: 'service-worker.ts',
+			strategies: 'injectManifest',
 			registerType: 'autoUpdate',
 			includeAssets: ['favicon.svg'],
 			pwaAssets,
@@ -106,7 +108,9 @@ export default defineConfig({
 				start_url: '/'
 			},
 			devOptions: {
-				enabled: true
+				enabled: true,
+				type: 'module',
+				navigateFallback: '/'
 			}
 		})
 	],

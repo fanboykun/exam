@@ -3,14 +3,12 @@
 	// import PasswordLogin from './(components)/password-login.svelte';
 	import SocialLogin from './(components)/social-login.svelte';
 	import { page } from '$app/state';
-	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { Folders } from '@lucide/svelte';
 
 	let { data } = $props();
 	let errorMessage = $derived(page.url.searchParams.get('error'));
 </script>
 
-<Toaster position="top-center" richColors closeButton />
 <div class="grid min-h-svh lg:grid-cols-2">
 	<div class="flex flex-col gap-4 p-6 md:p-10">
 		<div class="flex justify-center gap-2 md:justify-start">

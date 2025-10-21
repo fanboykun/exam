@@ -12,7 +12,11 @@
 		{@const isCurrentQuestion = examHook.currentQuestion.id === question.id}
 		{@const isAnswered = examHook.isAnswered(question.id)}
 		<Button
-			onclick={() => examHook.gotoQuestion(question.id)}
+			onclick={() => {
+				examHook.gotoQuestion(question.id);
+				examHook.currentState = 'progress';
+				examHook.isQuestionListOpen = false;
+			}}
 			class="relative outline outline-green-400"
 			variant={isCurrentQuestion ? 'default' : isAnswered ? 'secondary' : 'outline'}
 		>

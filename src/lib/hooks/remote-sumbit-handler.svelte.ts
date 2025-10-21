@@ -25,12 +25,16 @@ export type OnSubmitProps = {
 	cancel: (reason?: string) => never;
 	toast: typeof toast;
 };
+export type UnknownErrorProps = {
+	error: unknown;
+	toast: typeof toast;
+};
 export type RemoteSubmitHandlerProps<T extends BaseRemoteResponse> = {
 	onSubmit: (props: OnSubmitProps) => MaybePromise<RemoteHandler<T>>;
 	onSuccess?: (data: SuccessRemoteResponse<T>) => MaybePromise<void>;
 	onFailure?: (fail: FailureRemoteResponse<T>) => MaybePromise<void>;
 	onError?: (error: App.Error) => MaybePromise<void>;
-	onUnknownError?: (error: unknown) => MaybePromise<void>;
+	onUnknownError?: (props: UnknownErrorProps) => MaybePromise<void>;
 	onAborted?: (event: Event | Error) => MaybePromise<void>;
 	onRedirect?: (redirect: RedirectRemoteResponse<T>) => MaybePromise<void>;
 };
@@ -136,8 +140,11 @@ export function remoteSubmitHandler<T extends BaseRemoteResponse>(
 				await props.onError?.(err);
 			} else {
 				console.error(error);
-				toast.error('Something went wrong');
-				await props.onUnknownError?.(error);
+				if (typeof props.onUnknownError === 'function') {
+					await props.onUnknownError?.({ error, toast });
+				} else {
+					toast.error('Something went wrong');
+				}
 			}
 		} finally {
 			processing = false;

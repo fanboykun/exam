@@ -1,6 +1,7 @@
-import { SvelteMap } from 'svelte/reactivity';
 import { remoteSubmitHandler } from './remote-sumbit-handler.svelte';
 import { createAssignment, submitAssignment } from '$lib/remotes/assignment.remote';
+import { SyncedCache } from './db-sync.svelte';
+import { offlineSyncManager } from './offline-sync.svelte';
 
 export type ExamHook = ReturnType<typeof createExamHook>;
 
@@ -24,7 +25,7 @@ class ExamHookClass {
 	assignment = $state<Entity['Assignment']>();
 	questions = $state<QuestionWithChoices[]>([]);
 
-	answers = new SvelteMap<string, string>(); // questionId and choiceId
+	answers: SyncedCache<string, string> | null = null; // questionId and choiceId
 	currentQuestionIdx = $state(0);
 	currentQuestion = $derived(this.questions[this.currentQuestionIdx]);
 
@@ -38,18 +39,25 @@ class ExamHookClass {
 			if (this.assignment) return cancel('Assignment Alreadyy Exists');
 			return () => createAssignment({ examId: this.exam.id });
 		},
-		onSuccess: ({ data }) => {
+		onSuccess: async ({ data }) => {
 			this.assignment = data;
+			await this.initAnswersCache();
 			this.currentState = 'progress';
 			this.initializeTimer();
 		}
 	});
 
 	finishAssignmentHandler = remoteSubmitHandler({
-		onSubmit: ({ cancel }) => {
+		onSubmit: ({ cancel, toast }) => {
 			const assignmentId = this.assignment?.id;
 			if (!assignmentId) return cancel('No Assignemnt');
-			if (!this.answers.size) return cancel('No Answers Yet');
+			if (!this.answers || !this.answers.size) return cancel('No Answers Yet');
+
+			// Warn if offline
+			if (offlineSyncManager.offline) {
+				toast.info('You are offline. Your submission will be sent when you reconnect.');
+			}
+
 			const mappedAnswers = Array.from(this.answers.entries()).map(([questionId, choiseId]) => ({
 				questionId,
 				choiseId
@@ -61,11 +69,17 @@ class ExamHookClass {
 					finishedAt: new Date()
 				});
 		},
-		onSuccess: ({ data }) => {
+		onSuccess: async ({ data }) => {
 			this.assignment = data.assignment;
 			this.currentState = 'result';
-			this.clearAnswerFromLocalStorage(this.assignment.id);
+			if (this.answers) await this.answers.clearNamespace();
 			this.destroy();
+		},
+		onError: () => {
+			// Keep answers in cache if submission fails
+			if (offlineSyncManager.offline) {
+				// Toast already shown in onSubmit
+			}
 		}
 	});
 
@@ -73,7 +87,21 @@ class ExamHookClass {
 		this.exam = props.exam;
 		this.questions = props.exam.questions;
 		this.assignment = props.assignment;
+		this.initAnswersCache().then(() => {
+			if (this.assignment) {
+				this.currentState = 'progress';
+			}
+		});
 		this.initializeTimer();
+	}
+
+	private async initAnswersCache() {
+		if (!this.assignment) {
+			this.answers = null;
+			return;
+		}
+		this.answers = new SyncedCache<string, string>(`assignment-${this.assignment.id}`);
+		await this.answers.loadFromIndexedDB();
 	}
 
 	private initializeTimer() {
@@ -128,10 +156,12 @@ class ExamHookClass {
 	}
 
 	isCurrentAnswer(choiceId: string) {
+		if (!this.answers) return false;
 		return this.answers.get(this.currentQuestion.id) === choiceId;
 	}
 
 	isAnswered(questionId: string) {
+		if (!this.answers) return false;
 		return this.answers.has(questionId);
 	}
 
@@ -164,6 +194,7 @@ class ExamHookClass {
 	}
 
 	answerQuestion(choiceId: string) {
+		if (!this.answers) return;
 		this.answers.set(this.currentQuestion.id, choiceId);
 		// this.nextQuestion();
 	}
@@ -182,8 +213,9 @@ class ExamHookClass {
 
 	async retakeExam() {
 		this.stopTimer();
+		if (this.answers) await this.answers.clearNamespace();
 		this.assignment = undefined;
-		this.answers.clear();
+		await this.initAnswersCache();
 		this.currentQuestionIdx = 0;
 		this.currentState = 'preparation';
 		this.timeLeft = 0;
@@ -191,23 +223,6 @@ class ExamHookClass {
 
 	handleBeforeUnload(event: BeforeUnloadEvent) {
 		event.preventDefault();
-		if (!this.answers.size || !this.assignment) return;
-		if (this.currentState === 'result' || this.currentState === 'preparation') return;
-		const ans = Object.fromEntries(this.answers.entries());
-		const strans = JSON.stringify(ans);
-		localStorage.setItem(this.assignment.id, strans);
-	}
-
-	checkAnswerFromLocalStorage(key: string) {
-		const ans = localStorage.getItem(key);
-		if (!ans) return;
-		const parsed = JSON.parse(ans) as Record<string, string>;
-		Object.entries(parsed ?? {}).forEach(([questionId, choiceId]) => {
-			this.answers.set(questionId, choiceId);
-		});
-	}
-
-	clearAnswerFromLocalStorage(key: string) {
-		localStorage.removeItem(key);
+		// Answers are automatically synced to IndexedDB via service worker
 	}
 }

@@ -15,6 +15,7 @@
 	import { findAssignment } from '$lib/remotes/assignment.remote';
 
 	let { data } = $props();
+
 	const getExam = async () => {
 		if (!data.examId) return (await goto('/dashboard')) as never;
 		const exam = await findExamWithQuestionsAndChoises({ examId: data.examId! });
@@ -62,12 +63,20 @@
 					</div>
 				</div>
 			{:else if examHook.currentState === 'summary'}
-				<SummaryStep {examHook} />
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-5">
+					<div class="hidden sm:block">
+						<QuestionList {examHook} />
+					</div>
+					<div class="flex h-full items-center justify-center sm:col-span-4">
+						<!-- <ProgressStep {examHook} /> -->
+						<SummaryStep {examHook} />
+					</div>
+				</div>
 			{:else if examHook.currentState === 'result'}
 				<ResultStep {examHook} />
 			{/if}
 		</Card.Content>
-		{#if examHook.currentState === 'progress'}
+		{#if examHook.currentState === 'progress' || examHook.currentState === 'summary'}
 			<Button
 				class="absolute bottom-5 left-5 block sm:hidden"
 				onclick={() => (examHook.isQuestionListOpen = true)}>Pertanyaan</Button

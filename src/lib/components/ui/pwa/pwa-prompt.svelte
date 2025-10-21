@@ -111,4 +111,4 @@
 	}
 </script>
 
-<Toaster />
+<Toaster position="top-center" richColors closeButton />

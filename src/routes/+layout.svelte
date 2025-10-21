@@ -13,6 +13,7 @@
 	onMount(() => {
 		if (pwaInfo) {
 			registerSW({
+				immediate: true,
 				onNeedRefresh() {
 					// Show update available notification
 					console.log('New content available, please refresh.');
