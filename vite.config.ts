@@ -14,7 +14,7 @@ export default defineConfig({
 		SvelteKitPWA({
 			srcDir: 'src',
 			filename: 'service-worker.ts',
-			strategies: 'injectManifest',
+			strategies: 'generateSW',
 			registerType: 'prompt',
 			includeAssets: ['favicon.svg'],
 			pwaAssets,
