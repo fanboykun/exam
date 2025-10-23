@@ -19,7 +19,6 @@ export default defineConfig({
 			includeAssets: ['favicon.svg'],
 			pwaAssets,
 			injectManifest: {
-				rollupFormat: 'iife',
 				globPatterns: [
 					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2,json}',
 					'prerendered/**/*.{html,json}'
