@@ -29,8 +29,9 @@
 					});
 				},
 				onRegistered() {},
-				onRegisterError() {
+				onRegisterError(error) {
 					console.log('Service worker registration error');
+					console.error(error);
 				}
 			});
 		}
