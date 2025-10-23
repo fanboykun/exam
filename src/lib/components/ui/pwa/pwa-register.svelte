@@ -15,7 +15,7 @@
 					toast.info('New content available, please refresh.', {
 						action: {
 							label: 'Refresh',
-							onClick: () => updateSW()
+							onClick: () => updateSW(true)
 						},
 						closeButton: true,
 						richColors: false
@@ -27,6 +27,10 @@
 						richColors: false,
 						closeButton: true
 					});
+				},
+				onRegistered() {},
+				onRegisterError() {
+					console.log('Service worker registration error');
 				}
 			});
 		}

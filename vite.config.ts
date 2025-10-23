@@ -21,96 +21,11 @@ export default defineConfig({
 			injectManifest: {
 				rollupFormat: 'iife',
 				globPatterns: [
-					'client/**/*.{js,css,html,ico,png,svg,webp,woff,woff2,json,webmanifest}',
+					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2,json}',
 					'prerendered/**/*.{html,json}'
 				],
-				// swSrc: 'src/service-worker.ts',
-				// swDest: 'service-worker.js',
-				globIgnores: ['**/node_modules/**/*', '**/prerendered/**/*', '**/service-worker.ts']
+				globIgnores: ['**/node_modules/**/*', '**/service-worker.ts']
 			},
-			// workbox: {
-			// 	globPatterns: [
-			// 		'client/**/*.{js,css,html,ico,png,svg,webp,woff,woff2,json,webmanifest}',
-			// 		'prerendered/**/*.{html,json}'
-			// 	],
-			// 	cleanupOutdatedCaches: true,
-			// 	runtimeCaching: [
-			// 		// google font caching
-			// 		{
-			// 			urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-			// 			handler: 'CacheFirst',
-			// 			options: {
-			// 				cacheName: 'google-fonts-cache',
-			// 				expiration: {
-			// 					maxEntries: 10,
-			// 					maxAgeSeconds: 60 * 60 * 24 * 365
-			// 				},
-			// 				cacheableResponse: {
-			// 					statuses: [0, 200]
-			// 				}
-			// 			}
-			// 		},
-			// 		// google assets caching
-			// 		{
-			// 			urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-			// 			handler: 'CacheFirst',
-			// 			options: {
-			// 				cacheName: 'gstatic-fonts-cache',
-			// 				expiration: {
-			// 					maxEntries: 10,
-			// 					maxAgeSeconds: 60 * 60 * 24 * 365
-			// 				},
-			// 				cacheableResponse: {
-			// 					statuses: [0, 200]
-			// 				}
-			// 			}
-			// 		},
-			// 		// image caching
-			// 		{
-			// 			handler: 'CacheFirst',
-			// 			urlPattern: (e) => {
-			// 				return e.url.toString().match(/\.(jpg|jpeg|gif|png|svg|ico)/);
-			// 			},
-			// 			options: {
-			// 				cacheName: 'images-cache',
-			// 				cacheableResponse: {
-			// 					statuses: [0, 200]
-			// 				}
-			// 			}
-			// 		},
-			// 		// cache remote funcitons query
-			// 		{
-			// 			urlPattern: ({ url }) => {
-			// 				return url.pathname.includes('/_app/remote/');
-			// 			},
-			// 			method: 'GET',
-			// 			handler: 'NetworkFirst',
-			// 			options: {
-			// 				cacheName: 'remote-functions-cache',
-			// 				cacheableResponse: {
-			// 					statuses: [0, 200]
-			// 				}
-			// 			}
-			// 		},
-			// 		// queue and sync remote functions command
-			// 		{
-			// 			urlPattern: ({ url }) => {
-			// 				return url.pathname.includes('/_app/remote/');
-			// 			},
-			// 			method: 'POST',
-			// 			handler: 'NetworkOnly',
-			// 			options: {
-			// 				backgroundSync: {
-			// 					name: 'remote-functions-queue-POST',
-			// 					options: {
-			// 						maxRetentionTime: 24 * 60,
-			// 						forceSyncFallback: true
-			// 					}
-			// 				}
-			// 			}
-			// 		}
-			// 	]
-			// },
 			manifest: {
 				name: 'SvelteKit RFC Starter',
 				short_name: 'RFC Starter',
@@ -119,7 +34,33 @@ export default defineConfig({
 				background_color: '#ffffff',
 				display: 'standalone',
 				scope: '/',
-				start_url: '/'
+				start_url: '/',
+				icons: [
+					{
+						src: '/icon-192x192.png',
+						sizes: '192x192',
+						type: 'image/png',
+						purpose: 'any'
+					},
+					{
+						src: '/icon-512x512.png',
+						sizes: '512x512',
+						type: 'image/png',
+						purpose: 'any'
+					},
+					{
+						src: '/icon-192x192.png',
+						sizes: '192x192',
+						type: 'image/png',
+						purpose: 'maskable'
+					},
+					{
+						src: '/icon-512x512.png',
+						sizes: '512x512',
+						type: 'image/png',
+						purpose: 'maskable'
+					}
+				]
 			},
 			devOptions: {
 				enabled: true,

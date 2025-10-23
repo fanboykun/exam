@@ -3,29 +3,52 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 
-import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
-// import { clientsClaim } from 'workbox-core';
-import {
-	cleanupOutdatedCaches,
-	createHandlerBoundToURL,
-	precacheAndRoute
-} from 'workbox-precaching';
-import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { clientsClaim, skipWaiting } from 'workbox-core';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { NavigationRoute, registerRoute, setDefaultHandler } from 'workbox-routing';
+import { NetworkFirst, CacheFirst, NetworkOnly } from 'workbox-strategies';
 
 declare let self: ServiceWorkerGlobalScope;
+skipWaiting();
+clientsClaim();
 
+// This is the magic line. @vite-pwa/sveltekit injects your build files here.
+// This REPLACES the old `precacheList` with `build`, `files`, etc.
 precacheAndRoute(self.__WB_MANIFEST);
+
+// We still manually precache the offline page so we can use it as a fallback.
+// We give it a `revision` of null so it's always precached.
+precacheAndRoute([{ url: '/offline', revision: null }]);
 
 cleanupOutdatedCaches();
 
-let allowlist: undefined | RegExp[];
-if (import.meta.env.DEV) allowlist = [/^\/$/];
+const offlinePage = '/offline';
+const navigationStrategy = new NetworkFirst({
+	cacheName: 'navigations',
+	plugins: [
+		new CacheableResponsePlugin({
+			statuses: [0, 200] // Cache successful pages and opaque responses
+		})
+	]
+});
 
-// to allow work offline
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/'), { allowlist }));
+const navigationHandler = async (params) => {
+	try {
+		// Try to fetch the page from the network
+		return await navigationStrategy.handle(params);
+	} catch {
+		// If network fails, serve the offline page from the precache
+		return caches.match(offlinePage, {
+			ignoreSearch: true
+		}) as unknown as Response;
+	}
+};
+
+// Register this handler for all navigation requests
+registerRoute(new NavigationRoute(navigationHandler));
 
 // Google Fonts CSS caching
 registerRoute(
@@ -135,6 +158,8 @@ registerRoute(
 	}),
 	'POST'
 );
+
+setDefaultHandler(new NetworkFirst());
 
 // Message event for IndexedDB sync and skip waiting
 self.addEventListener('message', (event) => {
