@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	// import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { registerSW } from 'virtual:pwa-register';
 
 	const webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '');
 
-	onMount(() => {
+	$effect(() => {
 		if (pwaInfo) {
 			const updateSW = registerSW({
-				immediate: true,
+				// immediate: true,
 				onNeedRefresh() {
 					// Show update available notification
 					toast.info('New content available, please refresh.', {

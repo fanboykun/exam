@@ -5,10 +5,10 @@ export class OfflineSyncManager {
 	private pendingRequests = $state(0);
 
 	constructor() {
-		if (typeof window !== 'undefined') {
+		$effect.root(() => {
 			this.isOnline = navigator.onLine;
 			this.setupListeners();
-		}
+		});
 	}
 
 	private setupListeners() {
@@ -29,6 +29,8 @@ export class OfflineSyncManager {
 					toast.success('Offline changes synced successfully!');
 				} else if (event.data?.type === 'SYNC_FAILED') {
 					toast.error('Failed to sync some changes. Will retry later.');
+				} else if (event.data?.type === 'SYNC_STARTED') {
+					toast.info('Syncing offline changes...');
 				}
 			});
 		}

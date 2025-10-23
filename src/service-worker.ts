@@ -3,107 +3,152 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 
-import { build, files, version } from '$service-worker';
+import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
+// import { clientsClaim } from 'workbox-core';
+import {
+	cleanupOutdatedCaches,
+	createHandlerBoundToURL,
+	precacheAndRoute
+} from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 
-const sw = self as unknown as ServiceWorkerGlobalScope;
+declare let self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = `cache-${version}`;
-const ASSETS = [...build, ...files];
+precacheAndRoute(self.__WB_MANIFEST);
 
-// Install event
-sw.addEventListener('install', (event) => {
-	async function addFilesToCache() {
-		const cache = await caches.open(CACHE_NAME);
-		await cache.addAll(ASSETS);
-	}
-	event.waitUntil(addFilesToCache());
-});
+cleanupOutdatedCaches();
 
-// Activate event
-sw.addEventListener('activate', (event) => {
-	async function deleteOldCaches() {
-		for (const key of await caches.keys()) {
-			if (key !== CACHE_NAME) await caches.delete(key);
-		}
-	}
-	event.waitUntil(deleteOldCaches());
-});
+let allowlist: undefined | RegExp[];
+if (import.meta.env.DEV) allowlist = [/^\/$/];
 
-// Fetch event
-sw.addEventListener('fetch', (event) => {
-	if (event.request.method !== 'GET') return;
+// to allow work offline
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/'), { allowlist }));
 
-	const url = new URL(event.request.url);
+// Google Fonts CSS caching
+registerRoute(
+	/^https:\/\/fonts\.googleapis\.com\/.*/i,
+	new CacheFirst({
+		cacheName: 'google-fonts-cache',
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 10,
+				maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200]
+			})
+		]
+	})
+);
 
-	// Ignore chrome extension requests
-	if (url.protocol === 'chrome-extension:') return;
+// Google Fonts assets caching
+registerRoute(
+	/^https:\/\/fonts\.gstatic\.com\/.*/i,
+	new CacheFirst({
+		cacheName: 'gstatic-fonts-cache',
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 10,
+				maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200]
+			})
+		]
+	})
+);
 
-	async function respond() {
-		const cache = await caches.open(CACHE_NAME);
+// Image caching
+registerRoute(
+	({ url }) => url.pathname.match(/\.(jpg|jpeg|gif|png|svg|ico)$/),
+	new CacheFirst({
+		cacheName: 'images-cache',
+		plugins: [
+			new CacheableResponsePlugin({
+				statuses: [0, 200]
+			})
+		]
+	})
+);
 
-		// Serve build files from cache
-		if (ASSETS.includes(url.pathname)) {
-			const cachedResponse = await cache.match(url.pathname);
-			if (cachedResponse) return cachedResponse;
-		}
+// Remote functions GET - Network First with cache fallback
+registerRoute(
+	({ url, request }) => url.pathname.includes('/_app/remote/') && request.method === 'GET',
+	new NetworkFirst({
+		cacheName: 'remote-functions-cache',
+		plugins: [
+			new CacheableResponsePlugin({
+				statuses: [0, 200]
+			})
+		]
+	})
+);
 
-		// Try network first, fall back to cache
-		try {
-			const response = await fetch(event.request);
-			if (response.status === 200) {
-				cache.put(event.request, response.clone());
+// Remote functions POST - Network Only with Background Sync
+const bgSyncPlugin = new BackgroundSyncPlugin('remote-functions-queue-POST', {
+	maxRetentionTime: 24 * 60, // 24 hours in minutes,
+	onSync: async ({ queue }) => {
+		let entry;
+		let successfulCount = 0;
+
+		// Loop through all queued requests
+		while ((entry = await queue.shiftRequest())) {
+			try {
+				// 1. Replay the failed request
+				await fetch(entry.request.clone());
+
+				// If fetch was successful, increment counter
+				successfulCount++;
+			} catch {
+				// 2. If it fails again, put it back in the queue
+				await queue.unshiftRequest(entry);
+
+				// Stop processing this queue on failure
+				break;
 			}
-			return response;
-		} catch {
-			const cachedResponse = await cache.match(event.request);
-			if (cachedResponse) return cachedResponse;
 		}
+		if (successfulCount > 0) {
+			// Find all open client windows
+			const clients = await self.clients.matchAll({
+				type: 'window',
+				includeUncontrolled: true
+			});
 
-		return new Response('Not found', { status: 404 });
+			// 4. Send a message to all of them!
+			for (const client of clients) {
+				client.postMessage({
+					type: 'SYNC_COMPLETE',
+					count: successfulCount
+				});
+			}
+		}
 	}
-
-	event.respondWith(respond());
 });
 
-// Message event for IndexedDB sync
-sw.addEventListener('message', (event) => {
+registerRoute(
+	({ url, request }) => url.pathname.includes('/_app/remote/') && request.method === 'POST',
+	new NetworkOnly({
+		plugins: [bgSyncPlugin]
+	}),
+	'POST'
+);
+
+// Message event for IndexedDB sync and skip waiting
+self.addEventListener('message', (event) => {
+	if (event.data && event.data.type === 'SKIP_WAITING') {
+		self.skipWaiting();
+	}
 	if (event.data?.type === 'CACHE_SYNC') {
 		const { dbName, storeName, operation } = event.data;
 		handleCacheSync(dbName, storeName, operation);
 	}
 });
 
-// Listen for successful background sync
-sw.addEventListener('sync', async (event) => {
-	if (event.tag === 'remote-functions-queue-POST') {
-		event.waitUntil(handleBackgroundSync());
-	}
-});
-
-async function handleBackgroundSync() {
-	try {
-		// Notify clients that sync is happening
-		const clients = await sw.clients.matchAll();
-		clients.forEach((client) => {
-			client.postMessage({ type: 'SYNC_STARTED' });
-		});
-
-		// Workbox handles the actual replay of queued requests
-		// We just notify clients when it's done
-		const clients2 = await sw.clients.matchAll();
-		clients2.forEach((client) => {
-			client.postMessage({ type: 'SYNC_COMPLETE' });
-		});
-	} catch (error) {
-		console.error('Background sync failed:', error);
-		const clients = await sw.clients.matchAll();
-		clients.forEach((client) => {
-			client.postMessage({ type: 'SYNC_FAILED' });
-		});
-	}
-}
-
-sw.addEventListener('push', (event) => {
+// Push notification handler
+self.addEventListener('push', (event) => {
 	let data = {
 		title: 'Notification',
 		body: 'You have a new notification',
@@ -145,33 +190,35 @@ sw.addEventListener('push', (event) => {
 		]
 	};
 
-	event.waitUntil(sw.registration.showNotification(data.title, options));
+	event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-sw.addEventListener('notificationclick', (event) => {
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 
 	if (event.action === 'close') {
 		return;
 	}
 
-	const urlToOpen = new URL(event.notification.data?.url || '/', sw.location.origin).href;
+	const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
 	event.waitUntil(
-		sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
 			for (const client of clientList) {
 				if (client.url === urlToOpen && 'focus' in client) {
 					return client.focus();
 				}
 			}
 
-			if (typeof sw.clients.openWindow === 'function') {
-				return sw.clients.openWindow(urlToOpen);
+			if (typeof self.clients.openWindow === 'function') {
+				return self.clients.openWindow(urlToOpen);
 			}
 		})
 	);
 });
 
+// IndexedDB sync functions
 async function handleCacheSync(
 	dbName: string,
 	storeName: string,
