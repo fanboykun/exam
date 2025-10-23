@@ -19,10 +19,6 @@ clientsClaim();
 // This REPLACES the old `precacheList` with `build`, `files`, etc.
 precacheAndRoute(self.__WB_MANIFEST);
 
-// We still manually precache the offline page so we can use it as a fallback.
-// We give it a `revision` of null so it's always precached.
-precacheAndRoute([{ url: '/offline', revision: null }]);
-
 cleanupOutdatedCaches();
 
 const offlinePage = '/offline';
@@ -177,8 +173,8 @@ self.addEventListener('push', (event) => {
 	let data = {
 		title: 'Notification',
 		body: 'You have a new notification',
-		icon: '/icon-192x192.png',
-		badge: '/badge-72x72.png',
+		icon: '/pwa-192x192.png',
+		badge: '/pwa-64x64.png',
 		data: { url: '/' },
 		image: undefined,
 		requireInteraction: false,
@@ -201,8 +197,8 @@ self.addEventListener('push', (event) => {
 
 	const options = {
 		body: data.body,
-		icon: data.icon || '/icon-192x192.png',
-		badge: data.badge || '/badge-72x72.png',
+		icon: data.icon || '/pwa-192x192.png',
+		badge: data.badge || '/pwa-64x64.png',
 		image: data.image,
 		vibrate: [200, 100, 200],
 		tag: data.tag || `notification-${Date.now()}`,

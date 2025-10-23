@@ -12,7 +12,7 @@ export default defineConfig({
 		sveltekit(),
 		devtoolsJson(),
 		SvelteKitPWA({
-			srcDir: 'src',
+			srcDir: './src',
 			filename: 'service-worker.ts',
 			strategies: 'injectManifest',
 			registerType: 'prompt',
@@ -36,25 +36,25 @@ export default defineConfig({
 				start_url: '/',
 				icons: [
 					{
-						src: '/icon-192x192.png',
+						src: '/pwa-192x192.png',
 						sizes: '192x192',
 						type: 'image/png',
 						purpose: 'any'
 					},
 					{
-						src: '/icon-512x512.png',
+						src: '/pwa-512x512.png',
 						sizes: '512x512',
 						type: 'image/png',
 						purpose: 'any'
 					},
 					{
-						src: '/icon-192x192.png',
+						src: '/pwa-192x192.png',
 						sizes: '192x192',
 						type: 'image/png',
 						purpose: 'maskable'
 					},
 					{
-						src: '/icon-512x512.png',
+						src: '/pwa-512x512.png',
 						sizes: '512x512',
 						type: 'image/png',
 						purpose: 'maskable'
