@@ -139,7 +139,6 @@ export function remoteSubmitHandler<T extends BaseRemoteResponse>(
 				toast.error(err.message);
 				await props.onError?.(err);
 			} else {
-				console.error(error);
 				if (typeof props.onUnknownError === 'function') {
 					await props.onUnknownError?.({ error, toast });
 				} else {

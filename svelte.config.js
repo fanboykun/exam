@@ -14,6 +14,9 @@ const config = {
 		adapter: adapterAuto(),
 		experimental: {
 			remoteFunctions: true
+		},
+		serviceWorker: {
+			register: false
 		}
 	},
 	compilerOptions: {

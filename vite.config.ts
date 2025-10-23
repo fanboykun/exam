@@ -15,11 +15,12 @@ export default defineConfig({
 			srcDir: 'src',
 			filename: 'service-worker.ts',
 			strategies: 'injectManifest',
-			registerType: 'autoUpdate',
+			registerType: 'prompt',
 			includeAssets: ['favicon.svg'],
 			pwaAssets,
 			workbox: {
 				globPatterns: ['client/**/*.{js,css,html,ico,png,svg,webp,woff,woff2,json,webmanifest}'],
+				cleanupOutdatedCaches: true,
 				runtimeCaching: [
 					// google font caching
 					{

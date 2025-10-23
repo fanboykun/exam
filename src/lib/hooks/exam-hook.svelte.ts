@@ -2,6 +2,7 @@ import { remoteSubmitHandler } from './remote-sumbit-handler.svelte';
 import { createAssignment, submitAssignment } from '$lib/remotes/assignment.remote';
 import { SyncedCache } from './db-sync.svelte';
 import { offlineSyncManager } from './offline-sync.svelte';
+import { dev } from '$app/environment';
 
 export type ExamHook = ReturnType<typeof createExamHook>;
 
@@ -44,19 +45,22 @@ class ExamHookClass {
 			await this.initAnswersCache();
 			this.currentState = 'progress';
 			this.initializeTimer();
+		},
+		onUnknownError: ({ toast, error }) => {
+			if (dev) console.error(error);
+			if (offlineSyncManager.offline) {
+				toast.error('You are offline');
+			} else {
+				toast.error('Failed to create assignment. Please try again later.');
+			}
 		}
 	});
 
 	finishAssignmentHandler = remoteSubmitHandler({
-		onSubmit: ({ cancel, toast }) => {
+		onSubmit: ({ cancel }) => {
 			const assignmentId = this.assignment?.id;
 			if (!assignmentId) return cancel('No Assignemnt');
 			if (!this.answers || !this.answers.size) return cancel('No Answers Yet');
-
-			// Warn if offline
-			if (offlineSyncManager.offline) {
-				toast.info('You are offline. Your submission will be sent when you reconnect.');
-			}
 
 			const mappedAnswers = Array.from(this.answers.entries()).map(([questionId, choiseId]) => ({
 				questionId,
@@ -75,10 +79,13 @@ class ExamHookClass {
 			if (this.answers) await this.answers.clearNamespace();
 			this.destroy();
 		},
-		onError: () => {
+		onUnknownError: ({ toast, error }) => {
 			// Keep answers in cache if submission fails
+			if (dev) console.error(error);
 			if (offlineSyncManager.offline) {
-				// Toast already shown in onSubmit
+				toast.error('You are offline');
+			} else {
+				toast.error('Failed to create assignment. Please try again later.');
 			}
 		}
 	});
@@ -219,10 +226,5 @@ class ExamHookClass {
 		this.currentQuestionIdx = 0;
 		this.currentState = 'preparation';
 		this.timeLeft = 0;
-	}
-
-	handleBeforeUnload(event: BeforeUnloadEvent) {
-		event.preventDefault();
-		// Answers are automatically synced to IndexedDB via service worker
 	}
 }

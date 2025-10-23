@@ -1,6 +1,9 @@
 import { env } from '$lib/server/config/env';
 import type { LayoutServerLoadEvent } from './$types';
 
+export const ssr = false;
+export const csr = true;
+
 export const load = async ({ locals }: LayoutServerLoadEvent) => {
 	const { user } = locals;
 	const safeUser: SafeUser | null = user
