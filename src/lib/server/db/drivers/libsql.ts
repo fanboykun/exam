@@ -3,7 +3,6 @@ import * as schema from '../schema';
 
 function getCredentials() {
 	if (process.env.NODE_ENV === 'production') {
-		console.log(process.env);
 		if (
 			(!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) ||
 			!process.env.TURSO_AUTH_TOKEN
