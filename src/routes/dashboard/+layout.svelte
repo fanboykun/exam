@@ -25,6 +25,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import Settings_2 from '@lucide/svelte/icons/settings-2';
 	import { dev } from '$app/environment';
+	import { page } from '$app/state';
 
 	let { children, data }: LayoutProps = $props();
 
@@ -33,10 +34,22 @@
 			title: 'Dashboard',
 			links: [
 				{
-					label: 'Statistics',
-					url: '#',
+					label: 'Dashboard',
+					url: '/dashboard',
 					icon: ChartBar,
-					isActive: true
+					isActive: page.url.pathname === '/dashboard'
+				},
+				{
+					label: 'Exams',
+					url: '/dashboard/exams',
+					icon: ChartBar,
+					isActive: page.url.pathname.startsWith('/dashboard/exams')
+				},
+				{
+					label: 'Assignments',
+					url: '/dashboard/assignments',
+					icon: ChartBar,
+					isActive: page.url.pathname.startsWith('/dashboard/assignments')
 				}
 			]
 		}

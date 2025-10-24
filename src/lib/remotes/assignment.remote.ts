@@ -4,7 +4,7 @@ import { RemoteResponse } from '$lib/shared/utils/remote-response';
 import z from 'zod';
 import * as schema from '$lib/server/db/schema';
 import { dev } from '$app/environment';
-import { eq } from 'drizzle-orm';
+import { eq, type SQL } from 'drizzle-orm';
 import { decrypt, encrypt } from '$lib/server/utils/enc';
 
 const examSessionName = 'exam_session';
@@ -28,6 +28,43 @@ export const findAssignment = query(
 			return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 		}
 		return RemoteResponse.success({ data: assignment, message: 'Assignment Found!' });
+	}
+);
+
+export const paginateAssignments = query(
+	z.object({
+		page: z.coerce.number().default(1),
+		limit: z.coerce.number().min(10).max(50).default(10),
+		sorts: z
+			.object({
+				createdAt: z.enum(['asc', 'desc']).default('desc'),
+				score: z.enum(['asc', 'desc']).optional()
+			})
+			.default({ createdAt: 'desc' })
+	}),
+	async ({ page, limit, sorts }) => {
+		const {
+			locals: { user, session }
+		} = getRequestEvent();
+		if (!user || !session) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
+		const assignments = await db.query.assignments.findMany({
+			where: (assignments, { eq }) => eq(assignments.userId, user.id),
+			offset: (page - 1) * limit,
+			limit: limit,
+			orderBy: (fields, operators) => {
+				const sortQuery: SQL[] = [];
+				Object.entries(sorts).forEach(([key, value]) => {
+					if (value && typeof operators[value] === 'function') {
+						sortQuery.push(operators[value](fields[key as keyof typeof fields]));
+					}
+				});
+				return sortQuery;
+			},
+			with: {
+				exam: true
+			}
+		});
+		return RemoteResponse.success({ data: assignments, message: 'Assignments Found!' });
 	}
 );
 
