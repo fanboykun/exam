@@ -13,6 +13,7 @@
 	import { findExamWithQuestionsAndChoises } from '$lib/remotes/exam.remote';
 	import { goto } from '$app/navigation';
 	import { findAssignment } from '$lib/remotes/assignment.remote';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 
@@ -25,7 +26,11 @@
 	const getAssignment = async () => {
 		if (!data.assignmentSession) return;
 		const assignment = await findAssignment({ assignmentSession: data.assignmentSession });
-		return assignment;
+		if (!assignment.success) {
+			toast.error(assignment.message);
+			return;
+		}
+		return assignment.data;
 	};
 	const examHook = createExamHook({
 		exam: await getExam(),

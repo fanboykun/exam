@@ -26,7 +26,17 @@ export class OfflineSyncManager {
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.addEventListener('message', (event) => {
 				if (event.data?.type === 'SYNC_COMPLETE') {
-					toast.success('Offline changes synced successfully!');
+					let clicked = false;
+					toast.success('Offline changes synced successfully!', {
+						action: {
+							label: 'Reload',
+							onClick: () => {
+								clicked = true;
+								window.location.reload();
+							}
+						}
+					});
+					if (!clicked) setTimeout(() => window.location.reload(), 3000);
 				} else if (event.data?.type === 'SYNC_FAILED') {
 					toast.error('Failed to sync some changes. Will retry later.');
 				} else if (event.data?.type === 'SYNC_STARTED') {

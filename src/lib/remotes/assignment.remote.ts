@@ -5,48 +5,29 @@ import z from 'zod';
 import * as schema from '$lib/server/db/schema';
 import { dev } from '$app/environment';
 import { eq } from 'drizzle-orm';
-// import { compare, hash } from 'bcryptjs';
+import { decrypt, encrypt } from '$lib/server/utils/enc';
 
 const examSessionName = 'exam_session';
 
-// class assignmentSession {
-// 	private examSessionName = 'exam_session';
-// 	private hashSlat: number = 12;
-// 	async set(assignmentId: string) {
-// 		const { cookies } = getRequestEvent();
-// 		const signed = await hash(assignmentId, this.hashSlat);
-// 		cookies.set(this.examSessionName, signed, {
-// 			path: '/',
-// 			httpOnly: true,
-// 			secure: !dev,
-// 			sameSite: 'lax'
-// 		});
-// 	}
-// 	async get(assignmentId: string) {
-// 		const { cookies } = getRequestEvent();
-// 		const session = cookies.get(this.examSessionName);
-// 		if (!session) return null;
-// 		const isValid = await compare(assignmentId, session);
-// 		if (!isValid) return null;
-// 		return assignmentId;
-// 	}
-// 	delete() {
-// 		const { cookies } = getRequestEvent();
-// 		cookies.delete(this.examSessionName, { path: '/' });
-// 	}
-// }
-
 export const findAssignment = query(
-	z.object({ assignmentSession: z.string().length(48) }),
+	z.object({ assignmentSession: z.string().min(100) }),
 	async ({ assignmentSession }) => {
-		const assignmentId = atob(assignmentSession);
+		const {
+			locals: { user, session }
+		} = getRequestEvent();
+		if (!user || !session) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
+		const assignmentId = getExamSession(session, assignmentSession);
+		if (!assignmentId) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 		const assignment = await db.query.assignments.findFirst({
 			where: (assignments, { eq }) => eq(assignments.id, assignmentId),
 			with: {
 				answers: true
 			}
 		});
-		return assignment;
+		if (assignment && (assignment.userId !== user.id || assignment.sessionId !== session.id)) {
+			return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
+		}
+		return RemoteResponse.success({ data: assignment, message: 'Assignment Found!' });
 	}
 );
 
@@ -56,21 +37,36 @@ export const createAssignment = command(
 	}),
 	async ({ examId }) => {
 		const {
-			locals: { user, session },
-			cookies
+			locals: { user, session }
 		} = getRequestEvent();
 		if (!user || !session) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
-
-		const currentExamSession = cookies.get(examSessionName);
-		if (currentExamSession) {
-			return RemoteResponse.failure({ error: {}, message: 'You are already in an exam' });
-		}
-		cookies.delete(examSessionName, { path: '/' });
-
 		const selectedExam = await db.query.exams.findFirst({
 			where: (exams, { eq }) => eq(exams.id, examId)
 		});
 		if (!selectedExam) return RemoteResponse.failure({ error: {}, message: 'Exam not found' });
+
+		const assignmentId = getExamSession(session);
+		if (assignmentId) {
+			const maybeCurrentAssignment = await db.query.assignments.findFirst({
+				where: (assignments, { eq }) => eq(assignments.id, assignmentId)
+			});
+			if (maybeCurrentAssignment) {
+				if (
+					maybeCurrentAssignment.userId !== user.id ||
+					maybeCurrentAssignment.sessionId !== session.id
+				) {
+					return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
+				}
+				if (maybeCurrentAssignment.finishAt) {
+					return RemoteResponse.failure({ error: {}, message: 'Assignment already submitted' });
+				}
+				return RemoteResponse.success({
+					data: maybeCurrentAssignment,
+					message: 'Assignment Created!'
+				});
+			}
+		}
+
 		const [newAssignment] = await db
 			.insert(schema.assignments)
 			.values({
@@ -80,15 +76,10 @@ export const createAssignment = command(
 				sessionId: session.id
 			})
 			.returning();
-		if (!newAssignment)
+		if (!newAssignment) {
 			return RemoteResponse.failure({ error: {}, message: 'Failed to create assignment' });
-		cookies.set(examSessionName, btoa(newAssignment.id), {
-			path: '/',
-			maxAge: selectedExam.duration ? selectedExam.duration * 60 : undefined,
-			httpOnly: true,
-			secure: !dev,
-			sameSite: 'lax'
-		});
+		}
+		setExamSession(newAssignment.id, selectedExam, session);
 		return RemoteResponse.success({ data: newAssignment, message: 'Assignment Created!' });
 	}
 );
@@ -106,24 +97,20 @@ export const submitAssignment = command(
 	}),
 	async ({ assignmentId, answers, finishedAt }) => {
 		const {
-			locals: { user, session },
-			cookies
+			locals: { user, session }
 		} = getRequestEvent();
 		if (!user || !session) return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
-		const assignmentCookie = cookies.get(examSessionName);
-		if (!assignmentCookie) {
-			return RemoteResponse.failure({ error: {}, message: 'No assignment session found' });
-		}
-		const assignmentSession = atob(assignmentCookie);
-		if (assignmentId !== assignmentSession) {
-			return RemoteResponse.failure({ error: {}, message: 'No assignment session found' });
+
+		const assignmentIdFromSession = getExamSession(session);
+		if (!assignmentIdFromSession || assignmentIdFromSession !== assignmentId) {
+			return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 		}
 		const selectedAssignment = await db.query.assignments.findFirst({
 			where: (assignments, { eq }) => eq(assignments.id, assignmentId)
 		});
+
 		if (!selectedAssignment)
 			return RemoteResponse.failure({ error: {}, message: 'Assignment not found' });
-
 		if (selectedAssignment.userId !== user.id)
 			return RemoteResponse.failure({ error: {}, message: 'Unauthorized' });
 		if (selectedAssignment.finishAt)
@@ -181,7 +168,41 @@ export const submitAssignment = command(
 				message: 'Assignment Submitted!'
 			});
 		});
-		if (result.success) cookies.delete(examSessionName, { path: '/' });
+		if (result.success) deleteExamSession();
 		return result;
 	}
 );
+
+const setExamSession = (assignmentId: string, exam: Entity['Exam'], session: Entity['Session']) => {
+	const { cookies } = getRequestEvent();
+	deleteExamSession();
+	const encrypted = encrypt(assignmentId, session.id);
+	cookies.set(examSessionName, encrypted, {
+		path: '/',
+		maxAge: exam.duration ? exam.duration * 60 : undefined,
+		httpOnly: true,
+		secure: !dev,
+		sameSite: 'lax'
+	});
+};
+
+const getExamSession = (session: Entity['Session'], compareWith?: string) => {
+	const {
+		cookies,
+		request: { headers },
+		getClientAddress
+	} = getRequestEvent();
+	const examSession = cookies.get(examSessionName);
+	if (!examSession) return;
+	const ip = getClientAddress();
+	const ua = headers.get('user-agent');
+	if (ip !== session.ipAddress || ua !== session.userAgent) return;
+	if (compareWith && compareWith !== examSession) return;
+	const decrypted = decrypt(examSession, session.id);
+	return decrypted ? decrypted : undefined;
+};
+
+const deleteExamSession = () => {
+	const { cookies } = getRequestEvent();
+	cookies.delete(examSessionName, { path: '/' });
+};
