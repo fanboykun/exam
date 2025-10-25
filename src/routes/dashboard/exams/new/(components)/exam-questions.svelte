@@ -30,9 +30,11 @@
 	</div>
 	<div class="flex w-7/5 flex-col gap-4">
 		{#if questions[selectedIdx] !== undefined}
-			<QuestionContent bind:question={questions[selectedIdx]} />
-			<Separator />
-			<QuestionChoises bind:question={questions[selectedIdx]} />
+			{#key selectedIdx}
+				<QuestionContent bind:question={questions[selectedIdx]} />
+				<Separator />
+				<QuestionChoises bind:question={questions[selectedIdx]} />
+			{/key}
 		{/if}
 	</div>
 </div>

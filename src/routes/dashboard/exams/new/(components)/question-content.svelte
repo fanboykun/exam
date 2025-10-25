@@ -14,7 +14,6 @@
 	function onUpdate() {
 		question.content = question.editor?.getJSON();
 	}
-	$inspect(question);
 </script>
 
 <Card.Root>

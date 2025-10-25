@@ -11,7 +11,7 @@ export class Question {
 	}
 }
 
-class Choice {
+export class Choice {
 	position = $state<number>(0);
 	content = $state<Content>();
 	editor = $state<Editor>();

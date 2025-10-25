@@ -17,11 +17,9 @@
 	}
 	let { question = $bindable() }: Props = $props();
 	let selectedChoiceIdx = $state(0);
-	let selectedChoice = $derived<Choice>(question.choises[selectedChoiceIdx]);
-	function onUpdate() {
-		console.log(selectedChoice.editor?.getJSON());
-		if (selectedChoice) {
-			selectedChoice.content = selectedChoice.editor?.getJSON();
+	function onUpdate(choice: Choice) {
+		if (choice) {
+			choice.content = choice.editor?.getJSON();
 		}
 	}
 </script>
@@ -39,6 +37,9 @@
 							variant: 'secondary',
 							class: 'flex flex-grow items-center justify-start'
 						})}
+						onclick={() => {
+							selectedChoiceIdx = selectedChoiceIdx === i ? -1 : i;
+						}}
 					>
 						Option {choice.position}
 						{#if choice.isCorrect}
@@ -51,23 +52,23 @@
 					</div>
 				</div>
 				<Collapsible.Content class="w-full overflow-hidden">
-					{#if selectedChoice}
+					{#key `${question.number}-${choice.position}`}
 						<div class="z-50 size-full w-auto rounded-md border border-dashed">
-							{#if selectedChoice.editor && !selectedChoice.editor.isDestroyed}
+							{#if choice.editor && !choice.editor.isDestroyed}
 								<EdraToolBar
 									class="flex w-full items-center overflow-x-auto border-b border-dashed bg-secondary/50 p-0.5"
-									editor={selectedChoice.editor}
+									editor={choice.editor}
 								/>
-								<EdraDragHandleExtended editor={selectedChoice.editor} />
+								<EdraDragHandleExtended editor={choice.editor} />
 							{/if}
 							<EdraEditor
-								bind:editor={selectedChoice.editor}
-								content={selectedChoice.content}
+								bind:editor={choice.editor}
+								content={choice.content}
 								class="max-h-[30rem] max-h-screen min-h-[10rem] w-full overflow-y-scroll pr-2 pl-6"
-								{onUpdate}
+								onUpdate={() => onUpdate(choice)}
 							/>
 						</div>
-					{/if}
+					{/key}
 				</Collapsible.Content>
 			</Collapsible.Root>
 		{/each}
