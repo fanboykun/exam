@@ -55,7 +55,11 @@
 					</Collapsible.Root>
 				{:else}
 					<Sidebar.MenuItem>
-						<Sidebar.MenuButton>
+						<Sidebar.MenuButton
+							class={link.isActive
+								? 'bg-primary/90 text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
+								: ''}
+						>
 							{#snippet child({ props })}
 								<a href={(link as Link).url} {...props}>
 									<link.icon />

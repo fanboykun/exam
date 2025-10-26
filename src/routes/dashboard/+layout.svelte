@@ -8,9 +8,11 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { createBreadcrumb, setBreadcrumb } from '$lib/hooks/use-breadcrumb.svelte';
 	import {
-		ChartBar,
 		House,
-		RefreshCcw
+		NotebookText,
+		RefreshCcw,
+		ScrollText
+
 		// EditIcon,
 		// Folder,
 		// LayoutDashboardIcon,
@@ -29,26 +31,20 @@
 
 	let { children, data }: LayoutProps = $props();
 
-	const primaryLinks: NavLinks[] = [
+	const primaryLinks: NavLinks[] = $derived([
 		{
 			title: 'Dashboard',
 			links: [
 				{
-					label: 'Dashboard',
-					url: '/dashboard',
-					icon: ChartBar,
-					isActive: page.url.pathname === '/dashboard'
-				},
-				{
 					label: 'Exams',
 					url: '/dashboard/exams',
-					icon: ChartBar,
+					icon: ScrollText,
 					isActive: page.url.pathname.startsWith('/dashboard/exams')
 				},
 				{
 					label: 'Assignments',
 					url: '/dashboard/assignments',
-					icon: ChartBar,
+					icon: NotebookText,
 					isActive: page.url.pathname.startsWith('/dashboard/assignments')
 				}
 			]
@@ -101,15 +97,16 @@
 		// 		}
 		// 	]
 		// }
-	];
-	const secondaryLink: Link[] = [
+	]);
+
+	const secondaryLink: Link[] = $derived([
 		{
 			label: 'Settings',
 			url: '#',
 			icon: Settings_2,
 			isActive: false
 		}
-	];
+	]);
 	const breadcrumb = createBreadcrumb({ label: 'Dashboard' });
 	setBreadcrumb(breadcrumb);
 	const progress = progressOnNavigate();
