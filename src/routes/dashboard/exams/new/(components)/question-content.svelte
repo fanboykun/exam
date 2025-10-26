@@ -2,10 +2,10 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import {
 		EdraEditor,
-		EdraToolBar,
-		EdraDragHandleExtended
+		EdraToolBar
+		// EdraDragHandleExtended
 	} from '$lib/components/edra/shadcn/index.js';
-	import type { Question } from './exam-state.svelte';
+	import type { Question } from '../../../../../lib/hooks/exam-state.svelte';
 
 	interface Props {
 		question: Question;
@@ -20,14 +20,14 @@
 	<Card.Header>
 		<Card.Title>Question Content</Card.Title>
 	</Card.Header>
-	<Card.Content class="flex flex-col gap-2">
-		<div class="z-50 size-full w-auto rounded-md border border-dashed">
+	<Card.Content class="grid w-fit flex-col gap-2">
+		<div class="z-50 size-full w-full overflow-hidden rounded-md border border-dashed">
 			{#if question.editor && !question.editor.isDestroyed}
 				<EdraToolBar
 					class="flex w-full items-center overflow-x-auto border-b border-dashed bg-secondary/50 p-0.5"
 					editor={question.editor}
 				/>
-				<EdraDragHandleExtended editor={question.editor} />
+				<!-- <EdraDragHandleExtended editor={question.editor} /> -->
 			{/if}
 			<EdraEditor
 				bind:editor={question.editor}

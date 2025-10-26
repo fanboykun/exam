@@ -4,8 +4,15 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import ExamDetail from './(components)/exam-detail.svelte';
 	import ExamQuestions from './(components)/exam-questions.svelte';
+	import { createExam } from '../../../../lib/hooks/exam-state.svelte';
 
 	let step = $state<'detail' | 'questions'>('detail');
+	let exam = $state(createExam(1));
+
+	const saveExam = () => {
+		const examData = exam.extract();
+		console.log(examData);
+	};
 </script>
 
 <Card.Root>
@@ -20,10 +27,10 @@
 				<Tabs.Trigger value="questions">Questions</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="detail">
-				<ExamDetail />
+				<ExamDetail bind:exam />
 			</Tabs.Content>
 			<Tabs.Content value="questions">
-				<ExamQuestions />
+				<ExamQuestions bind:questions={exam.questions} />
 			</Tabs.Content>
 		</Tabs.Root>
 	</Card.Content>
@@ -35,7 +42,8 @@
 		>
 		<Button
 			onclick={() => {
-				step = 'questions';
+				if (step === 'questions') saveExam();
+				else step = 'questions';
 			}}>Next</Button
 		>
 	</Card.Footer>
